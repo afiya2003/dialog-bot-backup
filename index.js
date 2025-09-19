@@ -1,55 +1,57 @@
-import express from "express";
-import fetch from "node-fetch";
+const express = require("express");
+const bodyParser = require("body-parser");
+const axios = require("axios");
 
 const app = express();
-app.use(express.json());
+const PORT = process.env.PORT || 10000;
 
-const HF_MODEL = "distilgpt2"; // or gpt2, bloomz, etc.
-const HF_TOKEN = process.env.HF_TOKEN;
+// Hugging Face model + token
+const HF_MODEL = "distilgpt2"; // light and safe model
+const HF_TOKEN = process.env.HF_TOKEN; // set in Render environment variables
 
-// Root test route
+app.use(bodyParser.json());
+
+// Test route
 app.get("/", (req, res) => {
-  res.send("Server is running ✅");
+  res.send("Dialog-bot is running ✅");
 });
 
-// Dialogflow webhook route
+// Webhook route for Dialogflow
 app.post("/webhook", async (req, res) => {
   try {
-    const userMessage = req.body.queryResult.queryText;
+    const userQuery =
+      req.body.queryResult?.queryText || "Hello, I am lost 🤖";
 
-    const response = await fetch(
+    // Call Hugging Face API
+    const response = await axios.post(
       `https://api-inference.huggingface.co/models/${HF_MODEL}`,
+      { inputs: userQuery },
       {
-        method: "POST",
         headers: {
-          "Authorization": `Bearer ${HF_TOKEN}`,
-          "Content-Type": "application/json"
+          Authorization: `Bearer ${HF_TOKEN}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          inputs: userMessage,
-          parameters: { max_new_tokens: 50 }
-        })
       }
     );
 
-    const data = await response.json();
+    const botReply =
+      response.data[0]?.generated_text ||
+      "Sorry, I couldn’t generate a response.";
 
-    if (data.error) {
-      console.error("HF API error:", data);
-      return res.json({ fulfillmentText: "Error from Hugging Face API." });
-    }
-
-    const botReply = data[0]?.generated_text || "Sorry, I couldn’t generate a response.";
-
-    return res.json({ fulfillmentText: botReply });
-  } catch (err) {
-    console.error("Server error:", err);
-    return res.json({ fulfillmentText: "Internal server error." });
+    // Send back to Dialogflow
+    res.json({
+      fulfillmentText: botReply,
+    });
+  } catch (error) {
+    console.error("Error in webhook:", error.message);
+    res.json({
+      fulfillmentText:
+        "⚠️ There was an error generating a response. Please try again.",
+    });
   }
 });
 
-// Use Render’s PORT or fallback
-const PORT = process.env.PORT || 10000;
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
