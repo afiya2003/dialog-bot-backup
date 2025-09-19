@@ -1,13 +1,13 @@
 {
-  "name": "dialog-bot",
+  "name": "dialog-bot-backup",
   "version": "1.0.0",
-  "description": "Dialogflow bot with Hugging Face fallback",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "axios": "^1.7.2",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "node-fetch": "^3.3.2"
   }
 }
