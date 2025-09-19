@@ -6,7 +6,7 @@ app.use(express.json());
 
 // Hugging Face token from environment
 const HF_API_TOKEN = process.env.HF_TOKEN;
-const HF_MODEL = 'bigscience/bloomz-560m';
+const HF_MODEL = 'gpt2';
 
 app.post('/webhook', async (req, res) => {
     const userMessage = req.body.queryResult.queryText;
